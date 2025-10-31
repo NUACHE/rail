@@ -7,6 +7,14 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Middleware to capture raw body for debugging
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/sms') {
+    req.rawBody = req.body;
+  }
+  next();
+});
+
 const PORT = process.env.PORT || 3005;
 const MOOLRE_API_BASE_URL = (process.env.MOOLRE_API_BASE_URL || "https://api.moolre.com/").replace(/\/$/, "/");
 const X_API_VASKEY = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ2YXNpZCI6MTE4LCJleHAiOjE5MjQ5OTE5OTl9.4IuQ9uOHXJeeP-9_pJOmSGd3OIyfj-3R2__u2rOhV3c";
@@ -22,10 +30,65 @@ app.get("/health", (_req, res) => {
 
 // ✅ USSD Callback Endpoint
 app.post("/sms", async (req, res) => {
-  console.log("📩 Incoming USSD Request Body:", req.body);
+  console.log("📩 Incoming USSD Request Body (raw):", req.body);
+
+  // Parse the request body - it might be a JSON string
+  let ussdData = req.body;
+  
+  // Helper function to clean and parse JSON string
+  const tryParseJson = (str) => {
+    if (typeof str !== 'string') return null;
+    try {
+      // Clean up the string (remove \r\n, \n, and normalize whitespace)
+      const cleaned = str.trim()
+        .replace(/\r\n/g, '')
+        .replace(/\n/g, '')
+        .replace(/\s+/g, ' ');
+      
+      // Try to parse
+      return JSON.parse(cleaned);
+    } catch (e) {
+      return null;
+    }
+  };
+  
+  // If body is a string, parse it directly
+  if (typeof req.body === 'string') {
+    const parsed = tryParseJson(req.body);
+    if (parsed) ussdData = parsed;
+  } else if (typeof req.body === 'object' && req.body !== null) {
+    // Check if any property value contains a JSON string
+    const bodyKeys = Object.keys(req.body);
+    for (const key of bodyKeys) {
+      const value = req.body[key];
+      
+      // Try parsing the value
+      if (typeof value === 'string') {
+        const parsed = tryParseJson(value);
+        if (parsed) {
+          ussdData = parsed;
+          break;
+        }
+      }
+      
+      // Also try parsing the key itself (in case key is a JSON string)
+      const parsedKey = tryParseJson(key);
+      if (parsedKey) {
+        ussdData = parsedKey;
+        break;
+      }
+    }
+    
+    // If still not parsed and body already looks like USSD data, use it as-is
+    if (ussdData === req.body && (ussdData.sessionId || ussdData.msisdn)) {
+      // Already parsed correctly, use as-is
+    }
+  }
+
+  console.log("📩 Parsed USSD Data:", ussdData);
 
   // Extract USSD request fields
-  const { sessionId, msisdn, network, message, data } = req.body;
+  const { sessionId, msisdn, network, message, data, new: isNew } = ussdData;
   const userInput = message || data;
 
   console.log("Session ID:", sessionId);
@@ -38,7 +101,7 @@ app.post("/sms", async (req, res) => {
     senderid: "U17 Justify",
     messages: [
       {
-        recipient: msisdn || "0505721806", // use USSD caller number
+        recipient: msisdn , // use USSD caller number
         message: `
 Welcome to the Eastern Region U-17 Justifiers!
 
