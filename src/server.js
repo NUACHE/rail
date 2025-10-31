@@ -18,9 +18,11 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+
+
 // Forwards an SMS send request to Moolre API
 app.post("/sms", async (req, res) => {
-  console.log("SMS request received", req.body);
+  console.log("SMS request received", req);
   console.log('responce', res);
   const payload ={
     type: 1,
@@ -58,8 +60,11 @@ Brought to you by the Eastern Regional Minister.`,
       }
     );
 
-    res.status(response.status).json(response.data);
     console.log("SMS sent successfully", response.data);
+    res.json({
+      "message": "Menu\n1) Balance\n2) Account Information",
+      "reply": true
+    });
   } catch (error) {
 
     console.log("Error sending SMS", error);
