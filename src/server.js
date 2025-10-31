@@ -61,10 +61,16 @@ Brought to you by the Eastern Regional Minister.`,
     );
 
     console.log("SMS sent successfully", response.data);
+    if(response.data.status === 1) {
     res.json({
-      "message": "Menu\n1) Balance\n2) Account Information",
-      "reply": true
-    });
+      "message":"We've sent you an SMS with the next steps. Kindly follow it to finish your registration.",
+      "reply": false
+    });}else{
+      res.json({
+        "message":"Failed to send SMS. Please try again later.",
+        "reply": false
+      });
+    }
   } catch (error) {
 
     console.log("Error sending SMS", error);
