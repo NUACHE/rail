@@ -22,8 +22,7 @@ app.get("/health", (_req, res) => {
 
 // Forwards an SMS send request to Moolre API
 app.post("/sms", async (req, res) => {
-  console.log("SMS request received", req.body);
-  console.log("SMS request received", req.rawBody);
+  console.log("SMS request received", req);
   // console.log('responce', res);
   const payload ={
     type: 1,
