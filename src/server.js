@@ -102,8 +102,7 @@ app.post("/sms", async (req, res) => {
     messages: [
       {
         recipient: msisdn , // use USSD caller number
-        message: `
-Welcome to the Eastern Region U-17 Justifiers!
+        message: `Welcome to the Eastern Region U-17 Justifiers!
 
 Event Date: 22nd–23rd November 2025
 Venue: Koforidua Sports Stadium
